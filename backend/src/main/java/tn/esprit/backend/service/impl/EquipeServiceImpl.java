@@ -53,6 +53,9 @@ public class EquipeServiceImpl implements IEquipeService {
     @Override
     public Equipe assignEquipeToEntreprise(Long equipeId, Long entrepriseId) {
         Equipe equipe = equipeRepository.findById(equipeId).orElse(null);
+        if (equipe == null) {
+            return null;
+        }
         Entreprise entreprise = entrepriseRepository.findById(entrepriseId).orElse(null);
         equipe.setEntreprise(entreprise);
         return equipeRepository.save(equipe);
@@ -61,6 +64,9 @@ public class EquipeServiceImpl implements IEquipeService {
     @Override
     public Equipe assignEquipeToProjet(Long equipeId, Long projetId) {
         Equipe equipe = equipeRepository.findById(equipeId).orElse(null);
+        if (equipe == null) {
+            return null;
+        }
         Projet projet = projetRepository.findById(projetId).orElse(null);
         equipe.getProjets().add(projet);
         return equipeRepository.save(equipe);

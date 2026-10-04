@@ -50,6 +50,9 @@ public class ProjetDetailleServiceImpl implements IProjetDetailleService {
     @Override
     public ProjetDetaille assignProjetDetailleToProjet(Long projetDetailleId, Long projetId) {
         ProjetDetaille projetDetaille = projetDetailleRepository.findById(projetDetailleId).orElse(null);
+        if (projetDetaille == null) {
+            return null;
+        }
         Projet projet = projetRepository.findById(projetId).orElse(null);
         projetDetaille.setProjet(projet);
         return projetDetailleRepository.save(projetDetaille);

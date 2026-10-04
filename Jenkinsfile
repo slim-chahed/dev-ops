@@ -27,6 +27,11 @@ pipeline {
                     '''
                 }
             }
+            post {
+                always {
+                    junit 'backend/target/surefire-reports/*.xml'
+                }
+            }
         }
 
         stage('Test Backend') {
