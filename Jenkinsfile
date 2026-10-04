@@ -43,8 +43,9 @@ pipeline {
             steps {
                 dir('frontend') {
                     sh '''
-                        npm install -g sonarqube-scanner
-                        sonar-scanner \
+                        curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
+                        unzip -q sonar-scanner.zip
+                        ./sonar-scanner-4.8.0.2856-linux/bin/sonar-scanner \
                             -Dsonar.projectKey=tn.esprit:frontend \
                             -Dsonar.host.url=${SONAR_HOST_URL} \
                             -Dsonar.login=${SONAR_LOGIN}
