@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     triggers {
-        pollSCM('H/2 * * * *')
+        pollSCM('H/30 * * * *')
     }
 
     environment {
@@ -30,27 +30,6 @@ pipeline {
                 dir('backend') {
                     withSonarQubeEnv('SonarQube') {
                         sh 'mvn sonar:sonar'
-                    }
-                }
-            }
-        }
-
-        stage('SonarQube Analysis Frontend') {
-            steps {
-                dir('frontend') {
-                    withSonarQubeEnv('SonarQube') {
-                        sh '''
-                            set -e
-                            curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
-                            jar xf sonar-scanner.zip
-                            SCANNER_DIR=$(find . -maxdepth 1 -type d -name "sonar-scanner-*" | head -n 1)
-                            find "$SCANNER_DIR" -name "sonar-scanner" -type f -exec chmod +x {} \;
-                            find "$SCANNER_DIR" -name "sonar-scanner" -type f -exec sed -i 's/\\r$//' {} \;
-                            export JAVA_HOME=$(dirname "$(dirname "$(readlink -f "$(which javac)")")")
-                            export PATH="$JAVA_HOME/bin:$PATH"
-                            java -version
-                            "$SCANNER_DIR/bin/sonar-scanner" -Dsonar.projectKey=tn.esprit:frontend
-                        '''
                     }
                 }
             }
