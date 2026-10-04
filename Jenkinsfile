@@ -27,11 +27,6 @@ pipeline {
                     '''
                 }
             }
-            post {
-                always {
-                    junit 'backend/target/surefire-reports/*.xml'
-                }
-            }
         }
 
         stage('Test Backend') {
@@ -42,6 +37,12 @@ pipeline {
                         echo "=== Running Backend Tests ==="
                         mvn test
                     '''
+                }
+            }
+            
+            post {
+                always {
+                    junit 'backend/target/surefire-reports/*.xml'
                 }
             }
         }
