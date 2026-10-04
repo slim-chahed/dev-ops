@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    triggers {
+        pollSCM('H/2 * * * *')
+    }
+
     environment {
         DOCKER_HUB_USER = 'salimchahed'
         SONAR_HOST_URL = 'http://192.168.33.10:9000'
@@ -28,6 +32,20 @@ pipeline {
                 dir('backend') {
                     sh '''
                         mvn sonar:sonar \
+                            -Dsonar.host.url=${SONAR_HOST_URL} \
+                            -Dsonar.login=${SONAR_LOGIN}
+                    '''
+                }
+            }
+        }
+
+        stage('SonarQube Analysis Frontend') {
+            steps {
+                dir('frontend') {
+                    sh '''
+                        npm install -g sonarqube-scanner
+                        sonar-scanner \
+                            -Dsonar.projectKey=tn.esprit:frontend \
                             -Dsonar.host.url=${SONAR_HOST_URL} \
                             -Dsonar.login=${SONAR_LOGIN}
                     '''
