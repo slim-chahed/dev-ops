@@ -44,7 +44,7 @@ pipeline {
                 dir('frontend') {
                     sh '''
                         curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
-                        unzip -q sonar-scanner.zip
+                        jar xf sonar-scanner.zip
                         ./sonar-scanner-4.8.0.2856-linux/bin/sonar-scanner \
                             -Dsonar.projectKey=tn.esprit:frontend \
                             -Dsonar.host.url=${SONAR_HOST_URL} \
