@@ -7,80 +7,151 @@ pipeline {
 
     environment {
         DOCKER_HUB_USER = 'salimchahed'
-        DOCKER_HUB_CREDS = credentials('docker-hub-credentials')
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Compile') {
+        stage('Build Backend') {
             steps {
                 dir('backend') {
-                    sh 'mvn compile'
+                    sh '''
+                        set -e
+                        echo "=== Building Backend ==="
+                        mvn clean compile
+                    '''
                 }
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('Test Backend') {
             steps {
                 dir('backend') {
-                    withSonarQubeEnv('SonarQube') {
-                        sh 'mvn sonar:sonar'
-                    }
+                    sh '''
+                        set -e
+                        echo "=== Running Backend Tests ==="
+                        mvn test
+                    '''
                 }
             }
         }
 
-        stage('SonarQube Analysis Frontend') {
+        stage('Build Frontend') {
             steps {
                 dir('frontend') {
+                    sh '''
+                        set -e
+
+                        echo "=== Node Version ==="
+                        node --version
+
+                        echo "=== NPM Version ==="
+                        npm --version
+
+                        echo "=== Installing Dependencies ==="
+                        npm ci
+
+                        echo "=== Building Angular Frontend ==="
+                        npm run build
+                    '''
+                }
+            }
+        }
+
+        stage('SonarQube Backend') {
+            steps {
+                dir('backend') {
                     withSonarQubeEnv('SonarQube') {
                         sh '''
                             set -e
-                            curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
-                            jar xf sonar-scanner.zip
-                            SCANNER_DIR=$(find . -maxdepth 1 -type d -name "sonar-scanner-*" | head -n 1)
-                            chmod +x "$SCANNER_DIR/bin/sonar-scanner"
-                            sed -i 's/\r$//' "$SCANNER_DIR/bin/sonar-scanner"
-                            export JAVA_HOME=$(dirname "$(dirname "$(readlink -f "$(which javac)")")")
-                            export PATH="$JAVA_HOME/bin:$PATH"
-                            java -version
-                            "$SCANNER_DIR/bin/sonar-scanner" -Dsonar.projectKey=tn.esprit:frontend
+
+                            echo "=== SonarQube Backend Analysis ==="
+
+                            mvn sonar:sonar \
+                                -Dsonar.projectKey=tn.esprit:backend \
+                                -Dsonar.projectName="DevOps Backend"
                         '''
                     }
                 }
             }
         }
 
-        stage('Test') {
-            steps {
-                dir('backend') {
-                    sh 'mvn test'
-                }
-            }
-        }
-
-        stage('Package') {
-            steps {
-                dir('backend') {
-                    sh 'mvn package -DskipTests'
-                }
-            }
-        }
-
-        stage('Build & Push Images') {
+        stage('SonarQube Frontend') {
             steps {
                 script {
-                    def backendImage = docker.build("${DOCKER_HUB_USER}/backend:${BUILD_NUMBER}", "backend")
-                    def frontendImage = docker.build("${DOCKER_HUB_USER}/frontend:${BUILD_NUMBER}", "frontend")
+                    def scannerHome = tool 'SonarScanner'
 
-                    docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials') {
+                    dir('frontend') {
+                        withSonarQubeEnv('SonarQube') {
+                            sh """
+                                set -e
+
+                                echo "=== SonarScanner ==="
+                                ${scannerHome}/bin/sonar-scanner --version
+
+                                echo "=== Frontend SonarQube Analysis ==="
+
+                                ${scannerHome}/bin/sonar-scanner \
+                                    -Dsonar.projectKey=tn.esprit:frontend \
+                                    -Dsonar.projectName="DevOps Frontend" \
+                                    -Dsonar.sources=src \
+                                    -Dsonar.exclusions="node_modules/**,dist/**"
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Package Backend') {
+            steps {
+                dir('backend') {
+                    sh '''
+                        set -e
+                        mvn package -DskipTests
+                    '''
+                }
+            }
+        }
+
+        stage('Build Docker Images') {
+            steps {
+                script {
+
+                    def backendImage =
+                        docker.build(
+                            "${DOCKER_HUB_USER}/backend:${BUILD_NUMBER}",
+                            "backend"
+                        )
+
+                    def frontendImage =
+                        docker.build(
+                            "${DOCKER_HUB_USER}/frontend:${BUILD_NUMBER}",
+                            "frontend"
+                        )
+
+                    docker.withRegistry(
+                        'https://index.docker.io/v1/',
+                        'docker-hub-credentials'
+                    ) {
                         backendImage.push()
                         frontendImage.push()
+
+                        backendImage.push('latest')
+                        frontendImage.push('latest')
                     }
                 }
             }
@@ -89,9 +160,16 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh '''
+                    set -e
+
+                    echo "=== Deploying Application ==="
+
                     docker compose down || true
-                    docker rm -f sonarqube || true
+
                     docker compose up -d --build
+
+                    echo "=== Running Containers ==="
+                    docker compose ps
                 '''
             }
         }
@@ -100,6 +178,18 @@ pipeline {
     post {
         always {
             cleanWs()
+        }
+
+        success {
+            echo '========================================'
+            echo '        PIPELINE SUCCESSFUL'
+            echo '========================================'
+        }
+
+        failure {
+            echo '========================================'
+            echo '        PIPELINE FAILED'
+            echo '========================================'
         }
     }
 }
