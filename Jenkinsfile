@@ -43,22 +43,28 @@ pipeline {
 
         stage('Build Frontend') {
             steps {
-                dir('frontend') {
-                    sh '''
-                        set -e
+                script {
+                    def nodeHome = tool 'NodeJS'
 
-                        echo "=== Node Version ==="
-                        node --version
+                    dir('frontend') {
+                        withEnv(["PATH+NODE=${nodeHome}/bin"]) {
+                            sh '''
+                                set -e
 
-                        echo "=== NPM Version ==="
-                        npm --version
+                                echo "=== Node Version ==="
+                                node --version
 
-                        echo "=== Installing Dependencies ==="
-                        npm ci
+                                echo "=== NPM Version ==="
+                                npm --version
 
-                        echo "=== Building Angular Frontend ==="
-                        npm run build
-                    '''
+                                echo "=== Installing Dependencies ==="
+                                npm ci
+
+                                echo "=== Building Angular Frontend ==="
+                                npm run build
+                            '''
+                        }
+                    }
                 }
             }
         }
@@ -85,23 +91,26 @@ pipeline {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
+                    def nodeHome = tool 'NodeJS'
 
                     dir('frontend') {
-                        withSonarQubeEnv('SonarQube') {
-                            sh """
-                                set -e
+                        withEnv(["PATH+NODE=${nodeHome}/bin"]) {
+                            withSonarQubeEnv('SonarQube') {
+                                sh """
+                                    set -e
 
-                                echo "=== SonarScanner ==="
-                                ${scannerHome}/bin/sonar-scanner --version
+                                    echo "=== SonarScanner ==="
+                                    ${scannerHome}/bin/sonar-scanner --version
 
-                                echo "=== Frontend SonarQube Analysis ==="
+                                    echo "=== Frontend SonarQube Analysis ==="
 
-                                ${scannerHome}/bin/sonar-scanner \
-                                    -Dsonar.projectKey=tn.esprit:frontend \
-                                    -Dsonar.projectName="DevOps Frontend" \
-                                    -Dsonar.sources=src \
-                                    -Dsonar.exclusions="node_modules/**,dist/**"
-                            """
+                                    ${scannerHome}/bin/sonar-scanner \
+                                        -Dsonar.projectKey=tn.esprit:frontend \
+                                        -Dsonar.projectName="DevOps Frontend" \
+                                        -Dsonar.sources=src \
+                                        -Dsonar.exclusions="node_modules/**,dist/**"
+                                """
+                            }
                         }
                     }
                 }
