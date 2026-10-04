@@ -48,6 +48,7 @@ pipeline {
                             find "$SCANNER_DIR" -name "sonar-scanner" -type f -exec sed -i 's/\\r$//' {} \;
                             export JAVA_HOME=$(dirname "$(dirname "$(readlink -f "$(which javac)")")")
                             export PATH="$JAVA_HOME/bin:$PATH"
+                            java -version
                             "$SCANNER_DIR/bin/sonar-scanner" -Dsonar.projectKey=tn.esprit:frontend
                         '''
                     }
