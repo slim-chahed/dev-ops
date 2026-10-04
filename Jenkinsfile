@@ -44,8 +44,8 @@ pipeline {
                             curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
                             jar xf sonar-scanner.zip
                             SCANNER_DIR=$(find . -maxdepth 1 -type d -name "sonar-scanner-*" | head -n 1)
-                            find "$SCANNER_DIR" -name "sonar-scanner" -type f -exec chmod +x {} \;
-                            find "$SCANNER_DIR" -name "sonar-scanner" -type f -exec sed -i 's/\\r$//' {} \;
+                            chmod +x "$SCANNER_DIR/bin/sonar-scanner"
+                            sed -i 's/\r$//' "$SCANNER_DIR/bin/sonar-scanner"
                             export JAVA_HOME=$(dirname "$(dirname "$(readlink -f "$(which javac)")")")
                             export PATH="$JAVA_HOME/bin:$PATH"
                             java -version
