@@ -174,7 +174,6 @@ pipeline {
                     echo "=== Deploying Application ==="
 
                     docker compose down || true
-
                     docker compose up -d --build
 
                     echo "=== Running Containers ==="
