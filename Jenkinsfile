@@ -7,8 +7,6 @@ pipeline {
 
     environment {
         DOCKER_HUB_USER = 'salimchahed'
-        SONAR_HOST_URL = 'http://192.168.33.10:9000'
-        SONAR_LOGIN = credentials('sonar-token')
         DOCKER_HUB_CREDS = credentials('docker-hub-credentials')
     }
 
@@ -30,11 +28,9 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 dir('backend') {
-                    sh '''
-                        mvn sonar:sonar \
-                            -Dsonar.host.url=${SONAR_HOST_URL} \
-                            -Dsonar.login=${SONAR_LOGIN}
-                    '''
+                    withSonarQubeEnv('SonarQube') {
+                        sh 'mvn sonar:sonar'
+                    }
                 }
             }
         }
@@ -45,15 +41,15 @@ pipeline {
                     script {
                         def javaHome = tool 'jdk'
                         withEnv(["JAVA_HOME=${javaHome}"]) {
-                            sh '''
-                                curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
-                                jar xf sonar-scanner.zip
-                                chmod +x ./sonar-scanner-4.8.0.2856-linux/bin/sonar-scanner
-                                ./sonar-scanner-4.8.0.2856-linux/bin/sonar-scanner \
-                                    -Dsonar.projectKey=tn.esprit:frontend \
-                                    -Dsonar.host.url=${SONAR_HOST_URL} \
-                                    -Dsonar.login=${SONAR_LOGIN}
-                            '''
+                            withSonarQubeEnv('SonarQube') {
+                                sh '''
+                                    curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
+                                    jar xf sonar-scanner.zip
+                                    chmod +x ./sonar-scanner-4.8.0.2856-linux/bin/sonar-scanner
+                                    ./sonar-scanner-4.8.0.2856-linux/bin/sonar-scanner \
+                                        -Dsonar.projectKey=tn.esprit:frontend
+                                '''
+                            }
                         }
                     }
                 }
