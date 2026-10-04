@@ -59,8 +59,8 @@ services:
       - "9000:9000"
     environment:
       SONAR_JDBC_URL: jdbc:mysql://mysql:3306/sonar?useSSL=false&allowPublicKeyRetrieval=true
-      SONAR_JDBC_USERNAME: sonar
-      SONAR_JDBC_PASSWORD: sonar
+      SONAR_JDBC_USERNAME: root
+      SONAR_JDBC_PASSWORD: root
     depends_on:
       mysql:
         condition: service_healthy
